@@ -2,8 +2,8 @@
 # Publish Godogen runtime files into a target game repo.
 #
 # Usage:
-#   ./publish.sh --engine godot|bevy|babylon --agent claude|codex --out <target_dir> [--force] [--video_hook]
-#   ./publish.sh --engine godot|bevy|babylon --agent claude|codex <target_dir> [--force] [--video_hook]
+#   ./publish.sh --engine godot|bevy|babylon --agent claude|codex|opencode --out <target_dir> [--force] [--video_hook]
+#   ./publish.sh --engine godot|bevy|babylon --agent claude|codex|opencode <target_dir> [--force] [--video_hook]
 #
 # --video_hook installs the optional Stop hook (off by default). When enabled, the hook
 # is best-effort: with `tg-push` and TG_* env vars present at runtime it pushes the
@@ -106,7 +106,17 @@ case "$AGENT" in
         BEVY_HELP_COMMAND="\$bevy-help"
         BABYLON_HELP_COMMAND="\$babylon-help"
         ;;
-    *) echo "error: --agent must be claude or codex" >&2; usage; exit 1 ;;
+    opencode)
+        MANIFEST="AGENTS.md"
+        SKILLS_DIR_REL=".agents/skills"
+        HOOK_CONFIG_DIR=".agents"
+        AGENT_NAME="OpenCode"
+        GODOGEN_COMMAND="/godogen"
+        GODOT_API_COMMAND="/godot-api"
+        BEVY_HELP_COMMAND="/bevy-help"
+        BABYLON_HELP_COMMAND="/babylon-help"
+        ;;
+    *) echo "error: --agent must be claude, codex, or opencode" >&2; usage; exit 1 ;;
 esac
 
 if [ -z "$OUT" ]; then
@@ -162,7 +172,7 @@ python3 "$HELPERS/render_dir.py" "$TMP" \
 
 if [ "$AGENT" = "codex" ]; then
     python3 "$HELPERS/generate_codex_metadata.py" "$TMP/skills"
-else
+elif [ "$AGENT" = "claude" ]; then
     case "$ENGINE" in
         godot) python3 "$HELPERS/inject_claude_lookup_frontmatter.py" "$TMP/skills/godot-api/SKILL.md" ;;
         bevy) python3 "$HELPERS/inject_claude_lookup_frontmatter.py" "$TMP/skills/bevy-help/SKILL.md" ;;
@@ -209,6 +219,10 @@ if [ "$VIDEO_HOOK" -eq 1 ]; then
     if [ "$AGENT" = "codex" ]; then
         python3 "$HELPERS/write_codex_stop_hook.py" "$TARGET/$HOOK_CONFIG_DIR/config.toml"
         echo "Installed Codex stop hook"
+    elif [ "$AGENT" = "opencode" ]; then
+        mkdir -p "$TARGET/.opencode/plugins"
+        python3 "$HELPERS/write_opencode_stop_hook_plugin.py" "$TARGET/.opencode/plugins/stop-post-task-gate.ts"
+        echo "Installed OpenCode stop hook plugin"
     else
         python3 "$HELPERS/merge_claude_stop_hook.py" "$TARGET/$HOOK_CONFIG_DIR/settings.json"
         echo "Installed Claude Code stop hook"
@@ -219,6 +233,8 @@ if [ ! -f "$TARGET/.gitignore" ]; then
     {
         if [ "$AGENT" = "claude" ]; then
             printf '.claude\nCLAUDE.md\n'
+        elif [ "$AGENT" = "opencode" ]; then
+            printf '.agents\nAGENTS.md\n.opencode\n'
         else
             printf '.agents\nAGENTS.md\n.codex\n'
         fi
@@ -235,6 +251,16 @@ if [ ! -f "$TARGET/.gitignore" ]; then
         esac
     } > "$TARGET/.gitignore"
     echo "Created .gitignore"
+fi
+
+if [ "$AGENT" = "opencode" ] && [ ! -f "$TARGET/opencode.json" ]; then
+    cat > "$TARGET/opencode.json" << 'OPENEOCONF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md"]
+}
+OPENEOCONF
+    echo "Created opencode.json"
 fi
 
 git -C "$TARGET" init -q 2>/dev/null || true

@@ -8,17 +8,17 @@ This repository is not a published game repo. It is the source for runtime skill
 - `godot/` — Godot-specific `godogen` files, `godot-api`, Godot capture hook helpers, and Godot game-repo instructions
 - `bevy/` — Bevy-specific `godogen` files, `bevy-help`, Bevy capture hook helpers, and Bevy game-repo instructions
 - `babylon/` — Babylon.js-specific `godogen` files, `babylon-help`, Vite scaffold, browser capture hook helpers, and Babylon game-repo instructions
-- `publish.sh` — renders a runtime repo with `--engine {godot,bevy,babylon}` and `--agent {claude,codex}`
+- `publish.sh` — renders a runtime repo with `--engine {godot,bevy,babylon}` and `--agent {claude,codex,opencode}`
 
-Claude vs Codex is a publish-time render choice, not a source-tree split.
+Claude vs Codex vs OpenCode is a publish-time render choice, not a source-tree split.
 
 ## Source vs Runtime
 
 - `godot/game-engine.md`, `bevy/game-engine.md`, and `babylon/game-engine.md` render to `CLAUDE.md` or `AGENTS.md` in published game repos.
-- Runtime skills render to `.claude/skills/` for Claude Code and `.agents/skills/` for Codex.
-- Runtime hooks render to `.claude/hooks/` or `.codex/hooks/`.
+- Runtime skills render to `.claude/skills/` for Claude Code and `.agents/skills/` for Codex and OpenCode.
+- Runtime hooks render to `.claude/hooks/` for Claude Code, `.codex/hooks/` for Codex, and `.agents/hooks/` for OpenCode.
 - Codex `agents/openai.yaml` files are generated from each skill's rendered `SKILL.md` frontmatter.
-- Do not create or maintain `.claude/skills/` or `.agents/skills/` in this source repo.
+- OpenCode stop hook uses a plugin in `.opencode/plugins/` (OpenCode has no shell-hook directory).
 
 ## Skills
 

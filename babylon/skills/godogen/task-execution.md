@@ -65,10 +65,8 @@ Use `public/**` only for files that need stable direct URLs. Imported runtime as
 Final Babylon proof uses browser video recording:
 
 ```bash
-bash .codex/hooks/capture_result.sh screenshots/result/{N}
+bash ${HOOK_CONFIG_DIR}/hooks/capture_result.sh screenshots/result/{N}
 ```
-
-For Claude Code repos, use `.claude/hooks/capture_result.sh`.
 
 The result folder must contain `video.webm` and `video.mp4`. The MP4 should be 15 to 30 seconds and show task-relevant behavior for the full duration. If the scene is static, make the capture camera or scripted presentation vary the view.
 

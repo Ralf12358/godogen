@@ -61,10 +61,8 @@ ffmpeg -y -i screenshots/result/{N}/video.webm \
 The hook wraps this:
 
 ```bash
-bash .codex/hooks/capture_result.sh screenshots/result/{N}
+bash ${HOOK_CONFIG_DIR}/hooks/capture_result.sh screenshots/result/{N}
 ```
-
-Use `.claude/hooks/capture_result.sh` in Claude Code repos.
 
 ## Validation Standard
 

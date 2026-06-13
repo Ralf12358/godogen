@@ -1,6 +1,6 @@
 # Godogen
 
-Autonomous game development for Godot, Bevy, and Babylon.js with Claude Code and Codex.
+Autonomous game development for Godot, Bevy, and Babylon.js with Claude Code, Codex, and OpenCode.
 
 [![Watch the video](https://img.youtube.com/vi/eUz19GROIpY/maxresdefault.jpg)](https://youtu.be/eUz19GROIpY)
 
@@ -19,7 +19,7 @@ The source is organized along the engine axis:
 - `bevy/` — Bevy-specific `godogen` stages, Bevy capture helpers, and the `bevy-help` skill
 - `babylon/` — Babylon.js-specific `godogen` stages, Vite scaffold, browser capture helpers, and the `babylon-help` skill
 
-Claude Code vs Codex is a publish-time render choice, not a separate source tree. The root [publish.sh](publish.sh) renders the right runtime layout for the chosen engine and host agent.
+Claude Code vs Codex vs OpenCode is a publish-time render choice, not a separate source tree. The root [publish.sh](publish.sh) renders the right runtime layout for the chosen engine and host agent.
 
 ## What skills do
 
@@ -48,7 +48,7 @@ Claude Code vs Codex is a publish-time render choice, not a separate source tree
   - `TRIPO3D_API_KEY` — [Tripo3D](https://platform.tripo3d.ai/) for 3D generation
 - System packages from [setup.md](setup.md): `vulkan-tools`, `xvfb`, `ffmpeg`, `imagemagick`, plus platform-specific extras
 - Tested on Ubuntu, Debian, and macOS
-- Claude Code or Codex
+- Claude Code, Codex, or OpenCode
 
 ### Publish a game repo
 
@@ -61,6 +61,9 @@ Pick the engine and host agent:
 ./publish.sh --engine bevy  --agent codex  --out ~/my-game
 ./publish.sh --engine babylon --agent claude --out ~/my-game
 ./publish.sh --engine babylon --agent codex  --out ~/my-game
+./publish.sh --engine godot --agent opencode --out ~/my-game
+./publish.sh --engine bevy  --agent opencode --out ~/my-game
+./publish.sh --engine babylon --agent opencode --out ~/my-game
 ```
 
 Pass `--force` to wipe existing contents at the target before publishing — use this when re-publishing over a previous run. Pass `--video_hook` to install the optional Telegram stop hook (off by default; see below).
@@ -81,7 +84,7 @@ A full generation run can take hours, so it's convenient to offload it to a serv
 
 - Keep the session alive across SSH drops with `tmux` or `screen`.
 - Install [tg-push](https://github.com/htdt/tg-push) and publish with `--video_hook`: the stop hook auto-sends the final proof video to Telegram on completion.
-- Enable remote control so you can check in and steer the run from any device — both Claude Code and Codex have official remote-control interfaces.
+- Enable remote control so you can check in and steer the run from any device — both Claude Code, Codex, and OpenCode have official remote-control interfaces.
 
 ## Improving the skills
 

@@ -1,76 +1,118 @@
-# VR Architecture — Reading the Rig at Runtime
+# VR Architecture — The Rig and Its Two Transforms
 
-A Godot VR project uses three core node types from Godot's XR module. This
-file is the contract every VR feature must follow.
+The single most important fact about an OpenXR rig in Godot is that
+**the player moving their body and the player moving through the world
+are two different transforms**. Once that clicks, every other rule
+falls out of it.
 
-## The node trio
+## The two transforms
+
+A Godot XR rig has exactly two transforms that matter:
+
+| Node | What it represents | What moves it |
+|------|--------------------|---------------|
+| `XROrigin3D` | Where the player's body is in the **world** (the play space anchor) | Player physically walking, recentre, teleport, smooth-locomotion stick |
+| `XRCamera3D` | Where the player's **head** is relative to the body | Head tracking — every frame, as the player looks around, leans, crouches |
 
 ```text
-XROrigin3D            — room-anchored play space
-├── XRCamera3D        (HMD pose)         — head, inside the play space
-├── XRController3D    (left hand)        — pose only
-└── XRController3D    (right hand)       — pose only
+XROrigin3D            — play space anchor in the world
+├── XRCamera3D        — head, inside the play space
+├── XRController3D    — left hand, inside the play space
+└── XRController3D    — right hand, inside the play space
 ```
 
-The two transforms answer different questions:
+- **Player physically walks around the room** → the runtime moves
+  `XROrigin3D`. The camera, being a child, follows the body.
+- **Player looks around, leans, crouches** → the runtime moves
+  `XRCamera3D` *only*. `XROrigin3D` stays put.
+- **Player presses the smooth-locomotion stick** → game code moves
+  `XROrigin3D` (mimicking a walk). The camera, being a child, follows.
 
-- **`XROrigin3D` transform = "where is the play space in the room?"**
-  The runtime sets this once when the play space is established (room-scale
-  setup, recenter, teleport). It does **not** change frame-to-frame from
-  head motion. Smooth-locomotion code may translate it when the player
-  presses a stick, but head tracking alone does not move it.
-- **`XRCamera3D` transform = "where is the user's head inside the play
-  space?"** This is what the runtime writes every frame from head tracking.
-  It can change rapidly and is the only thing the runtime moves for pure
-  head motion (looking around, leaning, crouching).
+In every case, the camera's world transform is
+`origin.global_transform * camera.transform`. That single formula
+explains the rest of this document.
 
-If you want to drive a "VR player" in debug mode, move the `XRCamera3D`'s
-local transform. Do **not** move the `XROrigin3D` for head motion — that
-mocks room-scale translation, not head tracking, and gives a misleading
-verification image when the scene has play-space-attached objects.
+## What moves what (runtime vs your code)
 
-## What moves what
+| Action | Runtime writes | Your code can write |
+|--------|----------------|---------------------|
+| User looks around | `XRCamera3D.basis` | Never — the runtime owns the head pose |
+| User leans / crouches | `XRCamera3D.origin` (local) | Never |
+| User physically walks | `XROrigin3D.origin` | Never — the runtime owns room-scale |
+| User recentres | `XROrigin3D.basis + origin` | Never |
+| Smooth-locomotion stick | — | `XROrigin3D.origin` (and optionally `XROrigin3D.basis` for snap/smooth turn) |
+| Teleport | — | `XROrigin3D.origin` |
+| User waves a hand | `XRController3D` (left + right) | Never — the runtime owns hand pose |
 
-| Action                 | Runtime writes...         | Debug path writes...        |
-|------------------------|---------------------------|------------------------------|
-| User looks around      | `XRCamera3D.basis`        | `XRCamera3D.basis`           |
-| User leans / crouches  | `XRCamera3D.origin`       | `XRCamera3D.origin` (local)  |
-| User physically walks  | `XROrigin3D.origin` (room) | `XROrigin3D.origin`          |
-| Smooth-locomotion stick| `XROrigin3D.origin` (teleport) | `XROrigin3D.origin`     |
-| User waves a hand      | `XRController3D`          | `XRController3D`             |
+The split is the same on every backend (OpenXR, OpenXR + SteamVR,
+WebXR via godot-webxr, etc.). Do not hard-code `OpenXRInterface` —
+use the typed `XRInterface` superclass.
 
-In a play-space-attached object, the world transform is the parent's
-transform times the local transform. So:
+## Where to put your objects: world-fixed vs play-space-attached
 
-- Head-only motion: the play-space-attached object's world position does
-  not change relative to the room.
-- Play-space translation: the attached object's world position moves with
-  the play space, so from the user's point of view the object stays at
-  the same place inside the play space while the world moves past.
-
-## Parentage: where do my objects go?
-
-Two layouts, pick by intent:
+Pick by intent. There is no "right" answer in isolation — both are
+correct, but they answer different questions.
 
 ```text
-; World-fixed: floor, walls, props, skybox, all stationary items.
-; These do NOT move with the player.
+; World-fixed: floor, walls, ceiling, skybox, scenery, furniture,
+; all stationary items. They do NOT move with the player.
 [node name="Floor" type="MeshInstance3D" parent="."]
 
-; Play-space-attached: hand-held tools, body-worn UI, the cubes the
-; user has picked up. These follow the player when they teleport or
-; the play space recenters. With head-only motion they look stationary.
-[node name="Tool" type="MeshInstance3D" parent="XROrigin3D"]
+; Play-space-attached: the tool the player is holding, the watch on
+; their wrist, anything that is conceptually "on the player's body"
+; and should follow them when they teleport.
+[node name="HeldTool" type="MeshInstance3D" parent="XROrigin3D"]
 ```
 
-Both layouts are correct; choose based on what the object is *for*. The
-verification scene `test/world_test.tscn` (in this skill) puts the markers
-at the root (world-fixed) so that walking visibly moves them across the
-frame — that is the right choice for verifying rig motion. A consumer
-project that puts the demo objects under the `XROrigin3D` is making a
-"props the player carries" choice, which is correct for that intent but
-makes rig-motion verification confusing because the props follow the
-player. See `vr-verification.md` for the full explanation.
+The rule: **does this object live in the world, or on the player?**
+
+- A wall is world-fixed. Putting it under `XROrigin3D` means it
+  travels with the player when they walk — the wall is "in their
+  pocket". That's almost never what you want for static geometry.
+- A floating UI panel the user is reading, anchored 30 cm in front
+  of their face, is play-space-attached. Putting it at the scene
+  root means the user has to physically walk to it every time it
+  recentres. That's almost never what you want for body-locked UI.
+- A pickable prop is more subtle: in the world when no one is holding
+  it, attached to the holding hand when grabbed. Toggle its parent
+  at grab/release.
+
+The cheap mistake to avoid: decorating a room with cubes parented
+under `XROrigin3D`. They look fine when the player is at world
+origin; the moment the player walks (or the play space recentres),
+the room comes with them and the illusion of being *in* a place
+breaks.
+
+## Where to put your code
+
+| Feature | Lives on / under | Why |
+|---------|------------------|-----|
+| Player movement (smooth-loco, teleport) | `XROrigin3D` | That node *is* the play space |
+| HMD-relative things (reticle, fade, body-locked UI) | `XRCamera3D` | That node *is* the head |
+| Hand interactions (grab, point, ray UI) | `XRController3D` (left and right) | That node *is* the hand |
+| World-fixed (floor, props, walls) | scene root | The world |
+| Body-locked but not head-locked (belt UI, wrist menu) | `XROrigin3D` (a child of it, not the camera) | Moves with body, not head |
+| Teleport anchors | scene root | Anchors belong to the world |
+
+If you find yourself writing `XRCamera3D.global_transform.basis`
+from something *not* parented to the camera, stop and parent it
+correctly. The scene tree is the contract; do not recreate it in
+code.
+
+## Pose queries
+
+Always go through the nodes, never through
+`XRServer.get_reference_frame()`:
+
+- HMD position: `xr_camera.global_transform.origin`
+- HMD forward: `-xr_camera.global_transform.basis.z`
+- HMD up: `xr_camera.global_transform.basis.y`
+- HMD right: `xr_camera.global_transform.basis.x`
+- Controller pose: `xr_controller.global_transform`
+
+For hand-relative maths (UI rays, grab points), use
+`xr_controller.global_transform` directly — do not manually transform the
+controller pose into world space, the node already does that for you.
 
 ## Runtime detection — the only correct way
 
@@ -84,29 +126,15 @@ Patterns to avoid:
 
 - `OpenXRInterface` as a literal type — use `XRInterface` and check the
   interface name. The same code is correct on any future XR backend.
-- `OS.has_feature("OpenXR")` — returns true when the module is compiled in,
-  not when a runtime is present. Lies on a dev machine.
-- Caching the interface in a global at autoload time — the interface can be
-  initialised *after* the first frame on some backends. Re-query in
-  `_ready()`.
+- `OS.has_feature("OpenXR")` — returns true when the module is compiled
+  in, not when a runtime is present. Lies on a dev machine.
+- Caching the interface in a global at autoload time — the interface
+  can be initialised *after* the first frame on some backends. Re-query
+  in `_ready()`.
 
 When the runtime is missing, `xr_interface` is non-null but
 `is_initialized()` is false, and `use_xr` stays false. The viewport renders
 as a normal 3D scene. **This is the state the debug path exploits.**
-
-## Pose queries
-
-Always go through the nodes, never through `XRServer.get_reference_frame()`:
-
-- HMD position: `xr_camera.global_transform.origin`
-- HMD forward: `-xr_camera.global_transform.basis.z`
-- HMD up: `xr_camera.global_transform.basis.y`
-- HMD right: `xr_camera.global_transform.basis.x`
-- Controller pose: `xr_controller.global_transform`
-
-For hand-relative maths (UI rays, grab points), use
-`xr_controller.global_transform` directly — do not manually transform the
-controller pose into world space, the node already does that for you.
 
 ## Eye offsets and IPD
 
@@ -114,7 +142,7 @@ The two eye views come from `XRInterface.get_render_target_size()` and
 `XRServer.get_primary_interface().get_view_transforms()`. In debug mode
 those calls still work when the interface is initialised; when the
 interface is not initialised, you must compute the eye transforms
-manually — see `vr-capture.md`.
+manually — see the capture recipe in `vr-capture.md`.
 
 Default IPD is 0.064 m (64 mm). Make it configurable in the debug HUD
 so the user can sanity-check the stereo separation.
@@ -135,17 +163,3 @@ the .tres file. If a project does not have an action map, the capture
 script and VR player can fall back to keyboard simulation (see
 `vr-debug-mode.md`); for real runtime usage the consumer must author an
 action map.
-
-## Where to put VR code
-
-| Feature | Lives on / under |
-|---------|------------------|
-| Player movement (debug + real) | `XROrigin3D` (transform = play space) |
-| HMD-relative things (reticle, fade) | `XRCamera3D` (transform = head) |
-| Hand interactions (grab, point) | `XRController3D` (left and right) |
-| World-fixed (floor, props, walls) | scene root |
-| Teleport anchors | `XROrigin3D` (so they move with player) |
-
-If you find yourself writing `XRCamera3D.global_transform.basis` from
-something *not* parented to the camera, stop and parent it correctly. The
-scene tree is the contract; do not recreate it in code.

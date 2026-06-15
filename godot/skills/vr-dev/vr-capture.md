@@ -85,7 +85,9 @@ the shell script pipes the frames through `ffmpeg` to `video.mp4`.
 The capture script reads both at runtime:
 
 - IPD: a constant at the top of the script (default `0.064` m), which
-  the user can override with `--vr-ipd=0.065`.
+  the user can override with `--vr-ipd=0.065`. Do not be tempted to
+  read it from `XRServer.primary_interface.get_eye_view(0, ...).size`
+  — that returns the eye's *render target size*, not the eye's *offset*.
 - FOV: read `camera.fov` (vertical degrees) and derive horizontal from
   the SubViewport's aspect ratio: `h_fov = 2 * atan(tan(v_fov/2) * aspect)`.
   If the camera's `fov` is zero (the `XRCamera3D` default without a

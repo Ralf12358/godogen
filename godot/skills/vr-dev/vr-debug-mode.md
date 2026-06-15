@@ -52,8 +52,8 @@ the flag exists.)
 
 ## Driving the rig — `VRPlayer.gd`
 
-Attach `examples/VRPlayer.gd` to the `XROrigin3D` in the consumer's scene.
-It does three things, all gated on `VRDebug.enabled`:
+Attach `examples/VRPlayer.gd` to the `XROrigin3D` in your scene. It does
+three things, all gated on `VRDebug.enabled`:
 
 1. **Play-space movement** — `XROrigin3D` translation. WASD moves on the
    XZ plane, Shift/Ctrl are down/up, Q/E roll, R resets.
@@ -109,7 +109,9 @@ machine.
    `tracker = "left_hand"` / `"right_hand"` set in the inspector — Godot
    sets them automatically when you right-click the XROrigin3D and pick
    "Add XR Children").
-2. Parent any player-attached geometry under the `XROrigin3D`.
+2. Parent any play-space-attached geometry (body-locked UI, held tools)
+   under the `XROrigin3D`. Put world-fixed scenery at the scene root —
+   see `vr-architecture.md` for the rule.
 3. Attach `VRPlayer.gd` to the `XROrigin3D`.
 4. (Optional) Add the autoload.
 5. (Optional) Drop a `CanvasLayer` for a custom HUD.
@@ -123,7 +125,8 @@ script always-on via `OS.get_environment("VR_DEBUG") == "1"`.
 - **Driving `XRCamera3D.global_transform` from a script that also runs
   on a real headset.** The runtime owns that transform. Read it, do not
   write it. The debug script only writes when `VRDebug.enabled` is true.
-- **Setting `use_xr = true` in `main.gd` regardless of init.** Always
-  guard on `is_initialized()`.
+- **Setting `use_xr = true` regardless of init.** The init code
+  should guard on `is_initialized()` — keep that guard when you
+  refactor.
 - **Reading `Input.is_action_pressed("ui_up")` for VR motion.** That
   reads keyboard, not controllers. Use the action map.

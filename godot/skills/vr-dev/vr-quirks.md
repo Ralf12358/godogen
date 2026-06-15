@@ -75,10 +75,10 @@ file before binding UI to it.
 
 ## The `viewport.use_xr = true` call happens once, in `_ready`
 
-The standard pattern sets this in `_ready()`. If a scene is loaded
+The init script should do this in `_ready()`. If a scene is loaded
 later (e.g. from a main menu), the new viewport is the root viewport,
-and the runtime keeps using the original one. Always re-check on scene
-change.
+and the runtime keeps using the original one. Always re-check on
+scene change. Note this for future multi-scene work.
 
 ## Headless XR initialisation always fails — by design
 

@@ -1,0 +1,108 @@
+[gd_scene load_steps=6 format=3 uid="uid://bvrtest_worldv1"]
+
+; Verification scene for the vr-dev skill. World geometry is parented under
+; the root (not under the XROrigin3D) so walking forward makes the markers
+; grow in the frame. Used by .agents/skills/vr-dev/test/VRMotionTest.gd.
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 1
+background_color = Color(0.1, 0.12, 0.15, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.5, 0.5, 0.5, 1)
+ambient_light_energy = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_marker"]
+size = Vector3(0.4, 0.4, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="Material_marker"]
+albedo_color = Color(0.85, 0.35, 0.85, 1)
+metallic = 0.5
+roughness = 0.3
+
+[sub_resource type="BoxMesh" id="BoxMesh_side"]
+size = Vector3(0.4, 0.4, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="Material_side"]
+albedo_color = Color(0.35, 0.85, 0.65, 1)
+metallic = 0.5
+roughness = 0.3
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(30, 0.1, 30)
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.3, 0.4, 0.5, 1)
+
+[node name="Main" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="XROrigin3D" type="XROrigin3D" parent="."]
+
+[node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="Marker1m" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -1)
+mesh = SubResource("BoxMesh_marker")
+surface_material_override/0 = SubResource("Material_marker")
+
+[node name="Marker2m" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -2)
+mesh = SubResource("BoxMesh_marker")
+surface_material_override/0 = SubResource("Material_marker")
+
+[node name="Marker3m" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -3)
+mesh = SubResource("BoxMesh_marker")
+surface_material_override/0 = SubResource("Material_marker")
+
+[node name="Marker4m" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -4)
+mesh = SubResource("BoxMesh_marker")
+surface_material_override/0 = SubResource("Material_marker")
+
+[node name="Marker5m" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -5)
+mesh = SubResource("BoxMesh_marker")
+surface_material_override/0 = SubResource("Material_marker")
+
+[node name="Marker6m" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -6)
+mesh = SubResource("BoxMesh_marker")
+surface_material_override/0 = SubResource("Material_marker")
+
+[node name="Marker7m" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -7)
+mesh = SubResource("BoxMesh_marker")
+surface_material_override/0 = SubResource("Material_marker")
+
+[node name="Marker8m" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -8)
+mesh = SubResource("BoxMesh_marker")
+surface_material_override/0 = SubResource("Material_marker")
+
+[node name="SideMarker1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.4, -1)
+mesh = SubResource("BoxMesh_side")
+surface_material_override/0 = SubResource("Material_side")
+
+[node name="SideMarker2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.4, -3)
+mesh = SubResource("BoxMesh_side")
+surface_material_override/0 = SubResource("Material_side")
+
+[node name="SideMarker3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.4, -5)
+mesh = SubResource("BoxMesh_side")
+surface_material_override/0 = SubResource("Material_side")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.7071, -0.5, 0.5, 0, 0.7071, 0.7071, -0.7071, -0.5, 0.5, 0, 4, 0)
+shadow_enabled = true
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Material_floor")

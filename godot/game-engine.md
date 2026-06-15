@@ -1,1 +1,1 @@
-Use ${GODOGEN_COMMAND} to generate or update this Godot game from a natural language description.
+Use ${GODOGEN_COMMAND} to generate or update this Godot game from a natural language description. If the project is a VR / OpenXR project, use ${VR_DEV_COMMAND} to develop, debug, and visually verify it on a non-VR machine.

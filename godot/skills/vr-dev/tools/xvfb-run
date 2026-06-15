@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Minimal xvfb-run replacement.
+# Starts Xvfb on a private display, waits for the X socket, runs the
+# command, then kills Xvfb. Use this when the system does not have
+# xvfb-run (NixOS, minimal images, etc.).
+
+set -e
+
+D="${DISPLAY:-:99}"
+SCREEN="${XVFB_SCREEN:-1920x1080x24}"
+
+# Strip leading colon for the X11 socket filename.
+SOCK_NAME="X${D#:}"
+
+# Try to pick a fresh display if the default is taken.
+for try in "$D" :99 :98 :97; do
+    if [[ ! -e "/tmp/.X11-unix/X${try#:}" ]]; then
+        D="$try"
+        SOCK_NAME="X${D#:}"
+        break
+    fi
+done
+
+Xvfb "$D" -screen 0 "$SCREEN" -nolisten tcp -nolisten unix >/dev/null 2>&1 &
+XPID=$!
+trap 'kill "$XPID" 2>/dev/null || true' EXIT
+
+export DISPLAY="$D"
+# Wait for the X server socket to appear (up to ~5 seconds).
+for _ in $(seq 1 50); do
+    if [[ -e "/tmp/.X11-unix/$SOCK_NAME" ]]; then
+        break
+    fi
+    sleep 0.1
+done
+
+exec "$@"

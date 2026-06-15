@@ -95,6 +95,7 @@ case "$AGENT" in
         GODOT_API_COMMAND="/godot-api"
         BEVY_HELP_COMMAND="/bevy-help"
         BABYLON_HELP_COMMAND="/babylon-help"
+        VR_DEV_COMMAND="/vr-dev"
         ;;
     codex)
         MANIFEST="AGENTS.md"
@@ -105,6 +106,7 @@ case "$AGENT" in
         GODOT_API_COMMAND="\$godot-api"
         BEVY_HELP_COMMAND="\$bevy-help"
         BABYLON_HELP_COMMAND="\$babylon-help"
+        VR_DEV_COMMAND="\$vr-dev"
         ;;
     opencode)
         MANIFEST="AGENTS.md"
@@ -115,6 +117,7 @@ case "$AGENT" in
         GODOT_API_COMMAND="/godot-api"
         BEVY_HELP_COMMAND="/bevy-help"
         BABYLON_HELP_COMMAND="/babylon-help"
+        VR_DEV_COMMAND="/vr-dev"
         ;;
     *) echo "error: --agent must be claude, codex, or opencode" >&2; usage; exit 1 ;;
 esac
@@ -144,6 +147,8 @@ case "$ENGINE" in
     godot)
         rsync -a --delete --exclude='doc_source/' --exclude='__pycache__/' \
             "$REPO_ROOT/godot/skills/godot-api" "$TMP/skills/"
+        rsync -a --delete --exclude='__pycache__/' \
+            "$REPO_ROOT/godot/skills/vr-dev" "$TMP/skills/"
         ;;
     bevy)
         rsync -a --delete --exclude='docs/' --exclude='__pycache__/' \
@@ -163,12 +168,14 @@ python3 "$HELPERS/render_dir.py" "$TMP" \
     "GODOT_API_SKILL_DIR=$SKILLS_DIR_REL/godot-api" \
     "BEVY_HELP_SKILL_DIR=$SKILLS_DIR_REL/bevy-help" \
     "BABYLON_HELP_SKILL_DIR=$SKILLS_DIR_REL/babylon-help" \
+    "VR_DEV_SKILL_DIR=$SKILLS_DIR_REL/vr-dev" \
     "HOOK_CONFIG_DIR=$HOOK_CONFIG_DIR" \
     "ENGINE_NAME=${ENGINE^}" \
     "GODOGEN_COMMAND=$GODOGEN_COMMAND" \
     "GODOT_API_COMMAND=$GODOT_API_COMMAND" \
     "BEVY_HELP_COMMAND=$BEVY_HELP_COMMAND" \
-    "BABYLON_HELP_COMMAND=$BABYLON_HELP_COMMAND"
+    "BABYLON_HELP_COMMAND=$BABYLON_HELP_COMMAND" \
+    "VR_DEV_COMMAND=$VR_DEV_COMMAND"
 
 if [ "$AGENT" = "codex" ]; then
     python3 "$HELPERS/generate_codex_metadata.py" "$TMP/skills"
@@ -199,7 +206,8 @@ mkdir -p "$TMP/game"
 cp "$REPO_ROOT/$ENGINE/game-engine.md" "$TMP/game/game-engine.md"
 python3 "$HELPERS/render_dir.py" "$TMP/game" \
     "AGENT_NAME=$AGENT_NAME" \
-    "GODOGEN_COMMAND=$GODOGEN_COMMAND"
+    "GODOGEN_COMMAND=$GODOGEN_COMMAND" \
+    "VR_DEV_COMMAND=$VR_DEV_COMMAND"
 cp "$TMP/game/game-engine.md" "$TARGET/$MANIFEST"
 echo "Created $MANIFEST"
 
